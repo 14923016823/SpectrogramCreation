@@ -14,7 +14,7 @@ def plot_spectrogram(power, time, frequency):
     frequency (1D np.ndarray): The array of frequency values corresponding to the columns of the power matrix.
     """
     plt.figure(figsize=(10, 6))
-    plt.imshow(10 * np.log10(power), aspect='auto', origin='upper',
+    plt.imshow(10 * np.log10(power), cmap='viridis', aspect='auto', origin='upper',
                extent=[time.min(), time.max(), frequency.min(), frequency.max()])
     plt.colorbar(label='Power/Frequency (dB/Hz)')
     plt.title('Spectrogram')

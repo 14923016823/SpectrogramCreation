@@ -28,8 +28,8 @@ signal = read_data(path, dtype = dtype, count = read_count)
 
 # Call STFT function
 
-frame_size = 8192
-overlap_size = 4048
+frame_size = 2048
+overlap_size = frame_size // 2
 stft_matrix, time, frequency = stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sampeling=f_sampeling, f_relevant=f_relevant)
 
 # Call signal power function
