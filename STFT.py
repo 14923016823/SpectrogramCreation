@@ -17,10 +17,7 @@ def stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sa
         step_size = frame_size - overlap_size 
         num_frames = (len(signal) - frame_size) // step_size + 1
         df = f_sampeling / frame_size
-        k = int(np.floor(f_relevant / df))
         center = frame_size // 2
-        lo = center - k
-        hi = center + k + 1
 
         #stft_matrix = np.empty((num_frames, hi - lo), dtype=np.complex64)
         stft_matrix = np.empty((num_frames, frame_size), dtype=np.complex64)
@@ -41,19 +38,16 @@ def stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sa
             # Apply windowing function to the current frame 
             windowed_frame = signal_frame * win
             
-            # DC removal
-            #windowed_frame = windowed_frame - np.mean(windowed_frame)
+            # Noise floor estimation and elimination can be implemented here if needed, for example by setting a threshold and zeroing out values below it.
             
             try: 
                 stft_frame = np.fft.fftshift(np.fft.fft(windowed_frame))
                 ### Parse the relevant spectral components from the STFT frame 
-                #stft_frame = stft_frame[lo:hi] 
                 stft_matrix[i, :] = stft_frame 
             except: 
                 print("FFT computation failed for the current frame. Skipping this frame. '\n' The index of failure is: ", i) 
                 continue 
           
-        #f = (np.arange(lo, hi) - center) * df
         f = (np.arange(frame_size) - center) * df
         t = (np.arange(num_frames)*step_size + frame_size/2) / f_sampeling
         return stft_matrix, f, t
