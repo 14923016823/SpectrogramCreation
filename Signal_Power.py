@@ -11,7 +11,7 @@ def signal_noise_power(stft_matrix):
     # Parse out the signal from the STFT frame
     for i in range(power.shape[0]):
         power_max = np.max(power[i, :])
-        mask = (power[i, :] <= power_max - 13)  # Adjust the threshold as needed
+        mask = (power[i, :] <= power_max - 3)  # Adjust the threshold as needed
         noise += np.median(power[i, mask])
         sig_power_median += np.median(power[i, ~mask])
     

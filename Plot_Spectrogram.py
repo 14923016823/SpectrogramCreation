@@ -2,7 +2,6 @@
 # Power Spectral Density (PSD) computed from the Short-Time Fourier Transform (STFT).
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 def plot_spectrogram(power, time, frequency, noise_floor=None, sig_power_median=None):
     """
@@ -17,9 +16,9 @@ def plot_spectrogram(power, time, frequency, noise_floor=None, sig_power_median=
     """
     ### Compute the noise floor and set it to 0 in the power matrix
     plt.figure(figsize=(10, 6))
-    plt.imshow(power, cmap='viridis', aspect='auto', origin='lower',
+    plt.imshow(power, cmap='viridis', aspect='auto', origin='upper',
                vmin=noise_floor, vmax=sig_power_median,
-               extent=[time.min(), time.max(), frequency.min(), frequency.max()])
+               extent=[time.min(), time.max(), frequency.max(), frequency.min()])
     plt.colorbar(label='Power/Frequency (dB/Hz)')
     plt.title('Spectrogram')
     plt.ylabel('Time (s)')

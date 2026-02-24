@@ -1,6 +1,6 @@
 import numpy as np 
 
-def stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sampeling=250_000, f_relevant = 15_000): 
+def stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sampeling=25_000): 
     """ 
     Computes the Short-Time Fourier Transform (STFT) of a signal. 
     
@@ -18,8 +18,6 @@ def stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sa
         num_frames = (len(signal) - frame_size) // step_size + 1
         df = f_sampeling / frame_size
         center = frame_size // 2
-
-        #stft_matrix = np.empty((num_frames, hi - lo), dtype=np.complex64)
         stft_matrix = np.empty((num_frames, frame_size), dtype=np.complex64)
         
         try:
