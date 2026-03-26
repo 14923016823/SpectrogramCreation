@@ -18,7 +18,7 @@ def plot_spectrogram(power, time, frequency, noise_floor=None, sig_power_median=
     plt.figure(figsize=(10, 6))
     plt.imshow(power, cmap='viridis', aspect='auto', origin='upper',
                vmin=noise_floor, vmax=sig_power_median,
-               extent=[time.min(), time.max(), frequency.max(), frequency.min()])
+               extent=[frequency.min(), frequency.max(), time.max(), time.min()])
     plt.colorbar(label='Power/Frequency (dB/Hz)')
     plt.title('Spectrogram')
     plt.ylabel('Time (s)')

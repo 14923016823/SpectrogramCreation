@@ -2,38 +2,88 @@ from Read_data import read_data
 from STFT import stft_band
 from Signal_Power import signal_noise_power
 from Plot_Spectrogram import plot_spectrogram
-
-#from STFT import stft
-#from Plot_Spectrogram import plot_spectrogram
-
+from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
 import numpy as np
+from scipy.signal import savgol_filter
+from interp import interp
+from strest import strest
 
-# Add path of the data file
-
-path = "/home/nziubrys/Linux/GitHub/FFT_DATA/FUNcube-1_39444_202601010247.fc32"
+np.set_printoptions(threshold=np.inf)
+# 1. SETUP PATHS
+path_base = r"C:\Users\karol\Desktop\Project Python Folder\Data Dopptrack"
+data_aid = r"\Delfi-C3_32789_202003231040"
+path = path_base + data_aid + ".fc32"
+path2 = path_base + data_aid + ".dat.txt"
 
 # Define Macros
-f_tuning = 145_970_000
+f_tuning = 145869000
 f_sampeling = 25_000
+frame_size = 8192
+overlap_size = frame_size // 2
 
 # Define read parameters
 dtype = np.complex64
 read_count = -1
 
 # Call data reading function
-
 signal = read_data(path, dtype = dtype, count = read_count)
 
-# Call STFT function
 
-frame_size = int(8192 / 2)
-overlap_size = 2048
-stft_matrix, time, frequency = stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sampeling=f_sampeling)
+# --- 2. THE SWAP ---
+# Swapping 'time' and 'frequency' here as requested
+stft_matrix, frequency, time = stft_band(signal, frame_size, overlap_size, window_function=np.hanning, f_sampeling=f_sampeling)
+
+
 
 # Call signal power function
-
 power, noise_floor, sig_power_median = signal_noise_power(stft_matrix)
 
-# Call spectrogram plotting function
+# 2. READ RAW SIGNAL
+signal = read_data(path, dtype=np.complex64, count=-1)
 
+# 4. LOAD BEST-FIT DATA
+line_data = np.loadtxt(path2, delimiter=None, skiprows=1)
+bf_time = line_data[:, 0]
+bf_frequency = line_data[:, 1]
+
+# 1. Generate the spectrogram base
+# Note: Ensure plot_spectrogram arguments match your swap
 plot_spectrogram(power, time, frequency, noise_floor=noise_floor, sig_power_median=sig_power_median)
+
+# 2. Get the current axes
+ax = plt.gca()
+
+timei, frequencyi = interp(time, bf_time, bf_frequency, f_tuning)
+
+
+ax.scatter(frequencyi, timei, color='red', marker='x', s=10, label='Raw .dat Points')
+
+ax.set_ylim(max(timei), min(timei)) 
+
+# 6. Final touches
+ax.set_xlabel("frequency (Hz)")
+ax.set_ylabel("time (s)")
+ax.legend()
+plt.show()
+
+snr_db = strest(stft_matrix, frequency, noise_floor, frequencyi)
+
+snr_smoothed = np.copy(snr_db)
+valid_idx = ~np.isnan(snr_db)
+
+if np.sum(valid_idx) > 51: # Ensure we have enough points to filter
+    snr_smoothed[valid_idx] = savgol_filter(snr_db[valid_idx], window_length=51, polyorder=3)
+
+# 3. Plot both to see the difference
+plt.figure(figsize=(10, 5))
+plt.plot(time, snr_db, color='lightgray', alpha=0.5, label='Raw SNR (Jittery)')
+plt.plot(time, snr_smoothed, color='red', linewidth=2, label='Smoothed SNR')
+
+plt.title("Satellite Signal Strength (Filtered)")
+plt.xlabel("Time (s)")
+plt.ylabel("SNR (dB)")
+plt.ylim(44.05, 44.07) # Optional: Lock the view to see the 0.002 fluctuation
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
