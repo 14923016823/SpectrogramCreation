@@ -23,4 +23,4 @@ def plot_spectrogram(power, time, frequency, noise_floor=None, sig_power_median=
     plt.title('Spectrogram')
     plt.ylabel('Time (s)')
     plt.xlabel('Frequency (Hz)')
-    plt.show()
+    #plt.show()

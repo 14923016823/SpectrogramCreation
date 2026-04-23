@@ -53,39 +53,43 @@ plot_spectrogram(power, time, frequency, noise_floor=noise_floor, sig_power_medi
 noise_floor = noise_floor - 20  # Adjust noise floor for better visualization, if needed
 # 2. Get the current axes
 ax = plt.gca()
-
+# 1. SETUP DATA AND AXES
+# Get the Doppler path and SNR
 timei, frequencyi = interp(time, bf_time, bf_frequency, f_tuning)
-
-
-ax.scatter(frequencyi, timei, color='red', marker='x', s=10, label='Raw .dat Points')
-
-ax.set_ylim(max(timei), 0) 
-
-# 6. Final touches
-ax.set_xlabel("frequency (Hz)")
-ax.set_ylabel("time (s)")
-ax.legend()
-plt.show()
-
 snr_db = strest(stft_matrix, frequency, noise_floor, frequencyi)
-print(snr_db)
 
+# 2. SMOOTHING
 snr_smoothed = np.copy(snr_db)
 valid_idx = ~np.isnan(snr_db)
-
-if np.sum(valid_idx) > 51: # Ensure we have enough points to filter
+if np.sum(valid_idx) > 51:
     snr_smoothed[valid_idx] = savgol_filter(snr_db[valid_idx], window_length=51, polyorder=3)
 
+# 3. CREATE SIDE-BY-SIDE PLOT
+# figsize 15x8 gives enough room for both. width_ratios 2:1 keeps spectrogram larger.
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8), gridspec_kw={'width_ratios': [2, 1]}, constrained_layout=True)
 
+# --- LEFT PLOT: Spectrogram ---
+im = ax1.imshow(power, cmap='viridis', aspect='auto', origin='upper',
+                vmin=noise_floor, vmax=sig_power_median,
+                extent=[frequency.min(), frequency.max(), time.max(), 0])
 
-# 3. Plot both to see the difference
-plt.figure(figsize=(10, 5))
-plt.plot(timei, snr_db, color='lightgray', alpha=0.5, label='Raw SNR (Jittery)')
-plt.plot(timei, snr_smoothed, color='red', linewidth=2, label='Smoothed SNR')
-plt.ylim(min(snr_db)-10, max(snr_db)+10)
-plt.title("Satellite Signal Strength (Filtered)")
-plt.xlabel("Time (s)")
-plt.ylabel("SNR (dB)")
-plt.legend()
-plt.grid(True, alpha=0.3)
+ax1.scatter(frequencyi, timei, color='red', marker='x', s=5, label='Best-Fit Path', alpha=0.6)
+ax1.set_title(f"Spectrogram: {data_aid.strip('/')}")
+ax1.set_xlabel("Frequency (Hz)")
+ax1.set_ylabel("Time (s)")
+ax1.legend(loc='upper right')
+
+# --- RIGHT PLOT: Signal Strength (SNR) ---
+# We swap X and Y here: SNR on X-axis, Time on Y-axis to align with Spectrogram
+ax2.plot(snr_db, timei, color='lightgray', alpha=0.4, label='Raw SNR')
+ax2.plot(snr_smoothed, timei, color='red', linewidth=2, label='Smoothed SNR')
+ax2.set_title("Signal Strength (SNR)")
+ax2.set_xlabel("SNR (dB)")
+ax2.set_ylabel("Time (s)")
+ax2.grid(True, linestyle='--', alpha=0.3)
+ax2.legend()
+
+# IMPORTANT: Sync the Y-axis (Time) with the spectrogram
+ax2.set_ylim(max(time), 0) 
+
 plt.show()

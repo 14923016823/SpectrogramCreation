@@ -32,7 +32,7 @@ def strest(stft_matrix, freq_axis, noise_floor, path_freq, bandwidth_hz=1200):
             
             # Use the scalar noise_floor (ensure it's not log-scale dB here!)
             # If your noise_floor is in dB, use: 10**(noise_floor/10)
-            clean_pwr = total_window_pwr - (num_bins * noise_floor)
+            clean_pwr = total_window_pwr 
             
             extracted_pwr[i] = max(0, clean_pwr)
 
