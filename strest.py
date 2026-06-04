@@ -1,43 +1,32 @@
 import numpy as np
 
-def strest(stft_matrix, freq_axis, noise_floor, path_freq, bandwidth_hz=1200):
+def strest(S, f_ax, noise_floor, f_path, bw=1200, frame_size=1024):
     """
-    Integrates power along a frequency path and subtracts the noise floor.
+    Estimate signal power by integrating the STFT along the Doppler path.
+    Returns SNR [dB] at each time step; NaN where the path is undefined.
     """
-    # 1. Setup
-    half_bw = bandwidth_hz / 2
-    num_steps = len(path_freq)
-    extracted_pwr = np.zeros(num_steps)
-    
-    # FIX: Transpose the matrix here if it comes in as (Time, Frequency)
-    # This ensures rows = Frequency and columns = Time
-    power_matrix = np.abs(stft_matrix).T**2 
+    half_bw = bw / 2
 
-    # 2. The Loop
-    for i in range(num_steps):
-        f_target = path_freq[i]
-        
-        if np.isnan(f_target):
-            extracted_pwr[i] = 0
-            continue
-        
-        # Create the mask based on the frequency axis
-        f_mask = (freq_axis >= f_target - half_bw) & (freq_axis <= f_target + half_bw)
-        
-        if np.any(f_mask):
-            # Now power_matrix[f_mask, i] works because axis 0 is Frequency
-            total_window_pwr = np.sum(power_matrix[f_mask, i])
-            
-            num_bins = np.sum(f_mask)
-            
-            # Use the scalar noise_floor (ensure it's not log-scale dB here!)
-            # If your noise_floor is in dB, use: 10**(noise_floor/10)
-            clean_pwr = total_window_pwr 
-            
-            extracted_pwr[i] = max(0, clean_pwr)
+    # Normalise STFT to physical power units (accounts for window coherent gain)
+    win  = np.hanning(frame_size)
+    gain = np.mean(win)                                      # coherent gain ≈ 0.5 for Hanning
+    P    = (np.abs(S) / (frame_size * gain)).T ** 2          # shape: [freq_bins x time_steps]
 
-    # 3. Convert to dB
-    snr_db = 10 * np.log10(extracted_pwr + 1e-15)
-    snr_db[np.isnan(path_freq)] = np.nan
-    
-    return snr_db
+    n_steps  = len(f_path)
+    pwr_path = np.zeros(n_steps)
+
+    for i in range(n_steps):
+        fc = f_path[i]
+
+        if np.isnan(fc):
+            continue  # skip frames where the Doppler path is undefined
+
+        mask = (f_ax >= fc - half_bw) & (f_ax <= fc + half_bw)  # bins within bandwidth
+
+        if np.any(mask):
+            pwr_path[i] = max(0, np.sum(P[mask, i]))  # integrate power in window
+
+    snr = 10 * np.log10(pwr_path + 1e-15)  # convert to dB; small offset avoids log(0)
+    snr[np.isnan(f_path)] = np.nan          # restore NaN where path was undefined
+
+    return snr
